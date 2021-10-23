@@ -47,7 +47,7 @@ module PIXEL_SENSOR
 
    real             v_erase = 1.2;
    real             lsb = v_erase/255;
-   parameter real   dv_pixel = 0.5;
+   real             dv_pixel = ($random %100)/100;
 
    real             tmp;
    logic            cmp;
