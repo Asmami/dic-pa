@@ -64,8 +64,8 @@ module PIXEL_STATE
         end 
     endfunction
 
-    function logic[7:0] g2b;
-        input logic[7:0] gray;
+    function [7:0] g2b;
+        input [7:0] gray;
     begin
         integer i;
         g2b = gray;
