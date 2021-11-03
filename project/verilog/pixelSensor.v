@@ -34,20 +34,26 @@
 //  - Readout of latched value
 //----------------------------------------------------------------
 module PIXEL_SENSOR
+  #(
+   parameter addressBits = 2,
+   parameter pixeladdress = 1,
+   parameter real dv_pixel_div = 2
+  )
   (
-   input logic      VBN1,
-   input logic      RAMP,
-   input logic      RESET,
-   input logic      ERASE,
-   input logic      EXPOSE,
-   input logic      READ,
-   inout [7:0] DATA
+   input logic       VBN1,
+   input logic       RAMP,
+   input logic       RESET,
+   input logic       ERASE,
+   input logic       EXPOSE,
+   input logic       READ,
+   input [addressBits-1:0]       PIXELADDR,
+   inout [7:0]       DATA
    
    );
 
    real             v_erase = 1.2;
    real             lsb = v_erase/255;
-   real             dv_pixel = ($random %100)/100;
+   real             dv_pixel = 1/dv_pixel_div;
 
    real             tmp;
    logic            cmp;
@@ -94,11 +100,14 @@ module PIXEL_SENSOR
          p_data = DATA;
       end
    end
+   
 
    //----------------------------------------------------------------
    // Readout
    //----------------------------------------------------------------
    // Assign data to bus when pixRead = 0
-   assign DATA = READ ? p_data : 8'bZ;
+   
+   assign DATA = READ && (PIXELADDR == pixeladdress) ? p_data : 8'bZ;
+     
 
 endmodule // re_control
