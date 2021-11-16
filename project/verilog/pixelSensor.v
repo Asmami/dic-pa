@@ -35,8 +35,6 @@
 //----------------------------------------------------------------
 module PIXEL_SENSOR
   #(
-   parameter addressBits = 2,
-   parameter pixeladdress = 1,
    parameter real dv_pixel_div = 2
   )
   (
@@ -46,14 +44,13 @@ module PIXEL_SENSOR
    input logic       ERASE,
    input logic       EXPOSE,
    input logic       READ,
-   input [addressBits-1:0]       PIXELADDR,
    inout [7:0]       DATA
    
    );
 
    real             v_erase = 1.2;
    real             lsb = v_erase/255;
-   real             dv_pixel = 1/dv_pixel_div;
+   real             dv_pixel = 1/dv_pixel_div;   //Changed it to be set by parameter divisor 
 
    real             tmp;
    logic            cmp;
@@ -95,7 +92,7 @@ module PIXEL_SENSOR
    //----------------------------------------------------------------
    // Memory latch
    //----------------------------------------------------------------
-   always @(posedge RAMP or VBN1 or ERASE)  begin
+   always @(posedge RAMP or VBN1 or ERASE)  begin  //Change back!!!!!!!!!
       if(!cmp) begin
          p_data = DATA;
       end
@@ -106,8 +103,8 @@ module PIXEL_SENSOR
    // Readout
    //----------------------------------------------------------------
    // Assign data to bus when pixRead = 0
-   
-   assign DATA = READ && (PIXELADDR == pixeladdress) ? p_data : 8'bZ;
+   // Changed it so it is only driving when the address input is corresponding with the set address parameter
+   assign DATA = READ ? p_data : 8'bZ; 
      
 
 endmodule // re_control

@@ -75,10 +75,10 @@ module pixelSensor_tb;
    //------------------------------------------------------------
    parameter ERASE=0, EXPOSE=1, CONVERT=2, READ=3, IDLE=4;
 
-   logic               convert;
-   logic               convert_stop;
-   logic [2:0]         state,next_state;   //States
-   integer           counter;            //Delay counter in state machine
+   logic                convert;
+   logic                convert_stop;
+   logic [2:0]          state,next_state;   //States
+   integer              counter;            //Delay counter in state machine
 
    //State duration in clock cycles
    parameter integer c_erase = 5;
