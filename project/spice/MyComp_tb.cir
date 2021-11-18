@@ -68,6 +68,8 @@
 .param VADC_REF = {VADC_MAX - VADC_MIN}
 .param VADC_LSB = {VADC_REF/256}
 
+.param VASTORE = 1.0
+
 *----------------------------------------------------------------
 * Sources
 *----------------------------------------------------------------
@@ -79,6 +81,11 @@ VERASE ERASE 0 dc 0 pulse (0 VDD TD_ERASE TRF TRF PW_ERASE PERIOD)
 VEXPOSE EXPOSE 0 dc 0 pulse (0 VDD TD_EXPOSE TRF TRF PW_EXPOSE PERIOD)
 VCONVERT CONVERT 0 dc 0 pulse (0 VDD TD_CONVERT TRF TRF PW_CONVERT PERIOD)
 VREAD READ 0 dc 0 pulse (0 VDD TD_READ TRF TRF PW_READ PERIOD)
+
+
+VASSTORE VASSTORE 0 DC VASTORE
+VSTORE VSTORE VASSTORE DC 0
+
 
 *- ADC related sources
 VREF VREF 0 DC VADC_REF
@@ -98,12 +105,12 @@ XMNB0 VBN1 VBN1 VSS VSS NCHCM2
 * DUT
 *----------------------------------------------------------------
 .include MyPixelSensor.cir
-XDUT VBN1 VRAMP VRESET ERASE EXPOSE READ
-+ DATA_7 DATA_6 DATA_5 DATA_4 DATA_3 DATA_2 DATA_1 DATA_0 VDD VSS PIXEL_SENSOR
+*XDUT VBN1 VRAMP VRESET ERASE EXPOSE READ
+*+ DATA_7 DATA_6 DATA_5 DATA_4 DATA_3 DATA_2 DATA_1 DATA_0 VDD VSS PIXEL_SENSOR
 
 *XDUT_S VRESET VSTORE ERASE EXPOSE VDD VSS SENSOR
 
-*XDUT_C VCMP_OUT VSTORE VRAMP VBN1 VDD VSS COMP
+XDUT_C VCMP_OUT VSTORE VRAMP VBN1 VDD VSS COMP
 
 
 *----------------------------------------------------------------
@@ -123,59 +130,6 @@ R1 VRAMP 0 1T
 * Model reset as a variable resistor to
 BR2 VRAMP VMIN I=V(ERASE)*V(VRAMP,VMIN)/100
 
-
-*----------------------------------------------------------------
-* Model the ramp generation and data for the memory
-*----------------------------------------------------------------
-* I could not really think of a good way to generate digital signals in SPICE
-* So I generated the analog ramp, then digitize it to generate the DATA bit
-* In a real world circuit we would use a DAC, because in SystemVerilog, it's
-* easy to generate a digital bus
-B1 VADC 0 V = V(VRAMP) - VADC_MIN
-XADC7 VADC   REST_7 VREF DATA_7  READ CONVERT VDD ADC_1BIT
-XADC6 REST_7 REST_6 VREF DATA_6  READ CONVERT VDD ADC_1BIT
-XADC5 REST_6 REST_5 VREF DATA_5  READ CONVERT VDD ADC_1BIT
-XADC4 REST_5 REST_4 VREF DATA_4  READ CONVERT VDD ADC_1BIT
-XADC3 REST_4 REST_3 VREF DATA_3  READ CONVERT VDD ADC_1BIT
-XADC2 REST_3 REST_2 VREF DATA_2  READ CONVERT VDD ADC_1BIT
-XADC1 REST_2 REST_1 VREF DATA_1  READ CONVERT VDD ADC_1BIT
-XADC0 REST_1 REST_0 VREF DATA_0  READ CONVERT VDD ADC_1BIT
-XDAC0 DATA_7 DATA_6 DATA_5 DATA_4 DATA_3 DATA_2 DATA_1 DATA_0 DO VDD DAC_8BIT
-
-*----------------------------------------------------------------
-* 1-bit ADC model
-*----------------------------------------------------------------
-* Use the well know fact that we can connect multiple 1 bit ADCs in series,
-* as long as we multiply the analog remainder by two.
-* Or in maths:
-*   if in > ref/2:
-*      d = 1
-*      out = 2*in - ref
-*   else:
-*      d = 0
-*      out = 2*in
-*
-* Model the DATA output as pulled to VDD when we're reading
-.SUBCKT ADC_1BIT VIN VOUT VREF DATA READ CONVERT VDD
-B1 D 0 V= V(VIN) > V(VREF)/2 ? 1 : 0
-B2 VOUT 0  V = 2*(V(VIN) - V(VREF)/2*V(D))
-B3 DATA_INT 0 V = V(D)*V(VDD)
-B4 DATA_INT DATA I=V(CONVERT)*V(DATA_INT,DATA)/1k
-B5 DATA VDD I=V(READ)*V(DATA,VDD)/1e4
-.ENDS
-
-
-
-*----------------------------------------------------------------
-* 8-bit DAC model model
-*----------------------------------------------------------------
-* integer = 2^7*b7 + 2^6*b6 ... 2^0*b0
-.SUBCKT DAC_8BIT DATA_7 DATA_6 DATA_5 DATA_4 DATA_3 DATA_2 DATA_1 DATA_0 DO VDD
-B1 DO_VDD 0 V = 128*V(DATA_7) + 64*V(DATA_6) + 32*V(DATA_5) + 16*V(DATA_4)+ 8*V(DATA_3) + 4*V(DATA_2) + 2*V(DATA_1) + 1*V(DATA_0)
-B2 DO 0 V = V(DO_VDD)/V(VDD)
-.ENDS
-
-
 *----------------------------------------------------------------
 * NGSPICE control
 *----------------------------------------------------------------
@@ -185,14 +139,8 @@ set color0=white
 set color1=black
 unset askquit
 tran 1n 60u
-*plot V(ERASE) V(EXPOSE) V(CONVERT) V(READ)
-plot V(VRAMP) V(CONVERT) V(ERASE)
-plot V(DO)
-plot V(XDUT.VSTORE) V(ERASE) V(EXPOSE) V(CONVERT) V(VRAMP) V(XDUT.VCMP_OUT) V(READ)
-plot V(XDUT.VSTORE) V(VRAMP) V(XDUT.VCMP_OUT) V(READ) V(EXPOSE)
-plot V(XDUT.VSTORE) V(VRAMP) V(ERASE)
 
-plot V(XDUT_S.M1.VPG) V(EXPOSE)
+plot  V(VSTORE) V(VCMP_OUT) V(VRAMP)
 
 *plot v(xdut.xm1.xm1.vg) v(xdut.xm1.xm1.dmem)
 *plot v(xdut.xm1.xm2.vg) v(xdut.xm1.xm2.dmem)
